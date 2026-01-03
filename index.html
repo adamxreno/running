@@ -5,73 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Political Runner</title>
     <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            background: #f0f0f0;
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            flex-direction: column;
-        }
-        #menu, #gameover {
-            text-align: center;
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-            max-width: 400px;
-        }
-        button {
-            display: block;
-            margin: 10px auto;
-            padding: 12px 24px;
-            font-size: 18px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            background: #007bff;
-            color: white;
-            transition: background 0.3s;
-        }
-        button:hover {
-            background: #0056b3;
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-        canvas {
-            border: 2px solid #333;
-            background: #fafafa;
-            display: none;
-            border-radius: 5px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-        }
-        @media (max-width: 600px) {
-            canvas { width: 100%; height: auto; max-width: 600px; }
-        }
+        body { margin: 0; padding: 20px; background: #f0f0f0; font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; flex-direction: column; }
+        #menu, #gameover { text-align: center; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-width: 400px; }
+        button { display: block; margin: 20px auto; padding: 15px 30px; font-size: 20px; border: none; border-radius: 8px; cursor: pointer; background: #007bff; color: white; transition: 0.3s; }
+        button:hover { background: #0056b3; transform: scale(1.05); }
+        h1 { color: #333; }
+        canvas { border: 3px solid #333; background: #fafafa; display: none; border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
     </style>
 </head>
 <body>
     <div id="menu">
         <h1>🏃‍♂️ Political Runner</h1>
-        <p>Select your candidate:</p>
-        <button onclick="selectCharacter('trump')">🇺🇸 Trump</button>
-        <button onclick="selectCharacter('rfk')">🌿 RFK Jr</button>
-        <button onclick="selectCharacter('biden')">🕶️ Biden</button>
-        <button onclick="selectCharacter('kamala')">💜 Kamala</button>
-        <p style="margin-top: 20px; font-size: 16px;">High Score: <span id="menuHighScore">0</span></p>
+        <p>Jump over the chaos of the news cycle!</p>
+        <p>Select your survivor:</p>
+        <button onclick="selectCharacter('trump')">🇺🇸 Donald Trump</button>
+        <button onclick="selectCharacter('rfk')">🌿 RFK Jr.</button>
+        <button onclick="selectCharacter('biden')">🕶️ Joe Biden</button>
+        <button onclick="selectCharacter('kamala')">💜 Kamala Harris</button>
+        <p style="margin-top: 30px;">High Score: <span id="menuHighScore">0</span></p>
     </div>
-    <div id="gameover" style="display: none;">
-        <h1>💥 Game Over</h1>
-        <p>Your Score: <span id="finalScore">0</span></p>
+    <div id="gameover" style="display:none;">
+        <h1>💥 Crashed into Chaos!</h1>
+        <p>Distance Survived: <span id="finalScore">0</span></p>
         <p>High Score: <span id="goHighScore">0</span></p>
-        <button onclick="restartGame()">Play Again</button>
+        <button onclick="restartGame()">Run Again</button>
     </div>
-    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <canvas id="gameCanvas" width="900" height="450"></canvas>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -79,59 +38,59 @@
         const menuDiv = document.getElementById('menu');
         const gameoverDiv = document.getElementById('gameover');
 
-        // Game state
+        // Game vars
         let gameState = 'menu';
-        let currentCharacter = null;
+        let currentChar = null;
         let score = 0;
-        let highScore = 0;
-        let frameCount = 0;
-        let playerY = 0;
-        let velY = 0;
-        const GRAVITY = 0.8;
-        const JUMP_VEL = -16;
-        const PLAYER_WIDTH = 40;
-        const PLAYER_HEIGHT = 50;
-        const GROUND_Y = 350;
+        let highScore = parseInt(localStorage.getItem('political_runner_hs') || '0');
+        document.getElementById('menuHighScore').textContent = highScore;
+        let frame = 0;
+        let player = { y: 0, vy: 0, grounded: true };
+        const GROUND_Y = 380;
+        const GRAVITY = 0.9;
+        const JUMP = -18;
         const obstacles = [];
-        let keys = {};
-        let animationFrameId = null;
+        let dayNightCycle = 0;
 
-        // Characters
+        // Characters definition with unique traits
         const characters = {
-            trump: { name: 'TRUMP', color: '#c1440e', hasHair: true },
-            rfk: { name: 'RFK', color: '#228b22' },
-            biden: { name: 'BIDEN', color: '#4169e1', hasGlasses: true },
-            kamala: { name: 'KAMALA', color: '#8b008b' }
+            trump: { name: 'TRUMP', suit: '#c1440e', tie: '#ff0000', hair: '#ffa500', skin: '#f4a460' },
+            rfk: { name: 'RFK JR', suit: '#228b22', tie: '#006400', hair: '#8b4513', skin: '#f4a460' },
+            biden: { name: 'BIDEN', suit: '#4169e1', tie: '#00008b', hair: '#ffffff', skin: '#f4a460' },
+            kamala: { name: 'KAMALA', suit: '#8b008b', tie: '#4b0082', hair: '#000000', skin: '#d2691e' }
         };
 
-        // Load high score
-        function loadHighScore() {
-            highScore = parseInt(localStorage.getItem('political_runner_hs') || '0');
-            document.getElementById('menuHighScore').textContent = highScore;
+        // Audio context for simple jump sound
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playJumpSound() {
+            const osc = audioCtx.createOscillator();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.1);
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            osc.connect(gain).connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.2);
         }
 
-        // Init
-        function init() {
-            canvas.addEventListener('click', handleJump);
-            document.addEventListener('keydown', handleKeydown);
-            document.addEventListener('keyup', handleKeyup);
-            loadHighScore();
-        }
-
-        function selectCharacter(charKey) {
-            currentCharacter = characters[charKey];
+        function selectCharacter(key) {
+            currentChar = characters[key];
             menuDiv.style.display = 'none';
             canvas.style.display = 'block';
             resetGame();
-            gameState = 'playing';
             gameLoop();
         }
 
         function resetGame() {
             score = 0;
-            frameCount = 0;
-            playerY = GROUND_Y - PLAYER_HEIGHT;
-            velY = 0;
+            frame = 0;
+            dayNightCycle = 0;
+            player.y = GROUND_Y - 80;
+            player.vy = 0;
+            player.grounded = true;
             obstacles.length = 0;
         }
 
@@ -139,224 +98,282 @@
             if (gameState !== 'playing') return;
             update();
             draw();
-            animationFrameId = requestAnimationFrame(gameLoop);
+            requestAnimationFrame(gameLoop);
         }
 
         function update() {
-            frameCount++;
-            score += 0.16; // ~10 points/sec
+            frame++;
+            score += 0.2;
+            dayNightCycle = (score / 500) % 1; // Cycle every ~5000 points
 
-            // Jump input
-            if ((keys[' '] || keys['ArrowUp']) && playerY >= GROUND_Y - PLAYER_HEIGHT) {
-                velY = JUMP_VEL;
+            // Jump
+            if ((keys[' '] || keys['ArrowUp']) && player.grounded) {
+                player.vy = JUMP;
+                player.grounded = false;
+                playJumpSound();
             }
 
-            // Physics
-            velY += GRAVITY;
-            playerY += velY;
-            if (playerY > GROUND_Y - PLAYER_HEIGHT) {
-                playerY = GROUND_Y - PLAYER_HEIGHT;
-                velY = 0;
+            player.vy += GRAVITY;
+            player.y += player.vy;
+            if (player.y > GROUND_Y - 80) {
+                player.y = GROUND_Y - 80;
+                player.vy = 0;
+                player.grounded = true;
             }
 
             // Spawn obstacles
-            const spawnChance = 0.005 + (score * 0.0001);
-            if (Math.random() < spawnChance) {
-                const types = ['scandal', 'threat', 'lawsuit'];
-                obstacles.push({
-                    x: canvas.width,
-                    width: 20 + Math.random() * 20,
-                    height: 30 + Math.random() * 30,
-                    type: types[Math.floor(Math.random() * types.length)]
-                });
+            if (Math.random() < 0.008 + score * 0.00008) {
+                const types = ['scandal', 'lawsuit', 'threat', 'media', 'poll'];
+                obstacles.push({ x: canvas.width + 50, type: types[Math.floor(Math.random() * types.length)], size: 40 + Math.random() * 40 });
             }
 
-            // Update obstacles
+            // Move & collide
             for (let i = obstacles.length - 1; i >= 0; i--) {
-                obstacles[i].x -= 6 + (score * 0.0005);
+                obstacles[i].x -= 7 + score * 0.0008;
+                if (obstacles[i].x < -100) { obstacles.splice(i,1); continue; }
 
-                if (obstacles[i].x < -40) {
-                    obstacles.splice(i, 1);
-                    continue;
-                }
-
-                // Collision
-                const obRight = obstacles[i].x + obstacles[i].width;
-                const obTop = GROUND_Y - obstacles[i].height;
-                const playerRight = 80;
-                const playerBottom = playerY + PLAYER_HEIGHT;
-                const playerLeft = 40;
-                if (playerRight > obstacles[i].x &&
-                    playerLeft < obRight &&
-                    playerBottom > obTop &&
-                    playerY < GROUND_Y) {
+                // Simple collision
+                if (obstacles[i].x < 100 && obstacles[i].x + obstacles[i].size > 60 &&
+                    player.y + 80 > GROUND_Y - obstacles[i].size) {
                     gameOver();
-                    return;
                 }
             }
 
-            // Update high score
-            if (score > highScore) {
-                highScore = score;
-            }
+            if (score > highScore) highScore = Math.floor(score);
         }
 
         function draw() {
-            // Sky gradient
-            const gradient = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
-            gradient.addColorStop(0, '#87ceeb');
-            gradient.addColorStop(1, '#e0f6ff');
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, canvas.width, GROUND_Y);
+            // Sky with day/night
+            const skyGrad = ctx.createLinearGradient(0,0,0,canvas.height);
+            const brightness = 1 - dayNightCycle * 0.6;
+            skyGrad.addColorStop(0, `hsl(200, 70%, ${70 * brightness}%)`);
+            skyGrad.addColorStop(1, `hsl(210, 60%, ${90 * brightness}%)`);
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+
+            // Stars/moon at night
+            if (dayNightCycle > 0.5) {
+                ctx.fillStyle = 'white';
+                for (let i = 0; i < 20; i++) {
+                    const sx = (i * 123 + frame * 0.2) % canvas.width;
+                    ctx.fillRect(sx, 50 + i*10, 2, 2);
+                }
+            }
 
             // Clouds
-            drawClouds();
+            ctx.fillStyle = `rgba(255,255,255,${0.8 - dayNightCycle*0.4})`;
+            for (let i = 0; i < 5; i++) {
+                const cx = (frame * 0.5 + i*200) % (canvas.width + 200) - 100;
+                ctx.beginPath();
+                ctx.arc(cx, 80, 30, 0, Math.PI*2);
+                ctx.arc(cx+40, 80, 40, 0, Math.PI*2);
+                ctx.arc(cx+80, 80, 30, 0, Math.PI*2);
+                ctx.fill();
+            }
 
             // Ground
             ctx.fillStyle = '#90ee90';
             ctx.fillRect(0, GROUND_Y, canvas.width, canvas.height - GROUND_Y);
 
-            // Ground dashes
-            ctx.fillStyle = '#77dd77';
-            const dashOffset = -(frameCount * 2) % 50;
-            for (let d = 0; d < 20; d++) {
-                ctx.fillRect(dashOffset + d * 50, GROUND_Y + 5, 30, 4);
+            // Ground lines
+            ctx.strokeStyle = '#228b22';
+            ctx.lineWidth = 4;
+            const dash = frame * 3 % 60;
+            for (let i = -1; i < 15; i++) {
+                ctx.beginPath();
+                ctx.moveTo(dash + i*60, GROUND_Y + 10);
+                ctx.lineTo(dash + 30 + i*60, GROUND_Y + 10);
+                ctx.stroke();
             }
 
-            // Player
-            drawPlayer(40, playerY, currentCharacter);
+            // Draw obstacles
+            obstacles.forEach(ob => drawObstacle(ob));
 
-            // Obstacles
-            obstacles.forEach(drawObstacle);
+            // Draw player
+            drawCharacter(70, player.y, currentChar);
 
-            // UI
+            // Dust on landing
+            if (player.grounded && frame % 10 < 5) {
+                ctx.fillStyle = '#d2b48c';
+                ctx.fillRect(80, GROUND_Y - 5, 20, 10);
+            }
+
+            // Score
             ctx.fillStyle = 'black';
-            ctx.font = 'bold 28px Arial';
-            ctx.textAlign = 'left';
-            ctx.fillText(Math.floor(score), 80, 45);
-
-            ctx.textAlign = 'right';
-            ctx.fillText('HI ' + Math.floor(highScore), canvas.width - 80, 45);
-            ctx.textAlign = 'left';
+            ctx.font = 'bold 30px Arial';
+            ctx.fillText(`Distance: ${Math.floor(score)}`, 20, 50);
+            ctx.fillText(`HI ${Math.floor(highScore)}`, canvas.width - 200, 50);
         }
 
-        function drawPlayer(x, y, char) {
+        function drawCharacter(x, y, char) {
             ctx.save();
             ctx.translate(x, y);
 
-            // Running animation
-            const legAnim = Math.sin(frameCount * 0.4) * 4;
+            const runAnim = Math.sin(frame * 0.3) * 8;
+            const armAnim = Math.sin(frame * 0.3 + Math.PI) * 10;
 
-            // Body
-            ctx.fillStyle = char.color;
-            ctx.fillRect(5, 8, 30, 35);
+            // Shoes
+            ctx.fillStyle = '#000';
+            ctx.fillRect(10, 75, 15, 10);
+            ctx.fillRect(35, 75, 15, 10);
 
             // Legs
-            ctx.fillRect(8, 42 + legAnim, 7, 12);
-            ctx.fillRect(25, 42 - legAnim, 7, 12);
+            ctx.fillStyle = '#333';
+            ctx.fillRect(15, 50 + runAnim, 10, 30);
+            ctx.fillRect(35, 50 - runAnim, 10, 30);
 
-            // Head
-            ctx.fillStyle = '#f4a460';
+            // Suit body
+            ctx.fillStyle = char.suit;
+            ctx.fillRect(10, 20, 40, 50);
+
+            // Tie
+            ctx.fillStyle = char.tie;
             ctx.beginPath();
-            ctx.arc(20, 0, 13, 0, Math.PI * 2);
+            ctx.moveTo(30, 30);
+            ctx.lineTo(25, 60);
+            ctx.lineTo(35, 60);
+            ctx.closePath();
             ctx.fill();
 
-            // Eyes
-            ctx.fillStyle = 'black';
-            ctx.fillRect(14, -3, 3, 3);
-            ctx.fillRect(23, -3, 3, 3);
+            // Arms
+            ctx.fillStyle = char.suit;
+            ctx.fillRect(5, 30 + armAnim, 10, 30);
+            ctx.fillRect(45, 30 - armAnim, 10, 30);
 
-            // Special features
-            if (char.hasHair) {
-                // Trump hair
-                ctx.fillStyle = '#ffa500';
+            // Head
+            ctx.fillStyle = char.skin;
+            ctx.beginPath();
+            ctx.arc(30, 10, 18, 0, Math.PI*2);
+            ctx.fill();
+
+            // Hair
+            ctx.fillStyle = char.hair;
+            if (char === characters.trump) {
                 ctx.beginPath();
-                ctx.ellipse(20, -2, 20, 10, 0, 0, Math.PI * 2);
+                ctx.ellipse(30, 5, 25, 15, 0, 0, Math.PI*2);
+                ctx.fill();
+            } else if (char === characters.biden) {
+                ctx.fillRect(12, -5, 36, 20);
+            } else if (char === characters.kamala) {
+                ctx.fillRect(12, 0, 36, 30);
+            } else { // RFK
+                ctx.beginPath();
+                ctx.moveTo(12, 5);
+                ctx.quadraticCurveTo(30, -10, 48, 5);
                 ctx.fill();
             }
-            if (char.hasGlasses) {
-                // Biden glasses
+
+            // Eyes
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(22, 5, 6, 6);
+            ctx.fillRect(32, 5, 6, 6);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(25, 7, 3, 3);
+            ctx.fillRect(35, 7, 3, 3);
+
+            // Special: Biden glasses
+            if (char === characters.biden) {
                 ctx.strokeStyle = '#000';
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 3;
                 ctx.beginPath();
-                ctx.arc(12, -1, 4, 0, Math.PI * 2);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.arc(28, -1, 4, 0, Math.PI * 2);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(16, -1);
-                ctx.lineTo(24, -1);
+                ctx.arc(22, 8, 8, 0, Math.PI*2);
+                ctx.arc(38, 8, 8, 0, Math.PI*2);
+                ctx.moveTo(30, 8);
+                ctx.lineTo(34, 8);
                 ctx.stroke();
             }
 
-            // Name label
-            ctx.fillStyle = 'black';
-            ctx.font = 'bold 11px Arial';
+            // Special: Kamala pearls
+            if (char === characters.kamala) {
+                ctx.fillStyle = '#fff';
+                for (let p=0; p<5; p++) ctx.beginPath(), ctx.arc(15 + p*8, 28, 4, 0, Math.PI*2), ctx.fill();
+            }
+
+            // Name tag
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 12px Arial';
             ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(char.name, 20, -25);
+            ctx.fillText(char.name, 30, -10);
+
             ctx.restore();
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'alphabetic';
         }
 
         function drawObstacle(ob) {
-            let color, label;
-            switch (ob.type) {
-                case 'scandal': color = '#ff6600'; label = 'S'; break;
-                case 'threat': color = '#cc0000'; label = 'T'; break;
-                case 'lawsuit': color = '#9932cc'; label = 'L'; break;
-            }
-            ctx.fillStyle = color;
-            ctx.fillRect(ob.x, GROUND_Y - ob.height, ob.width, ob.height);
+            ctx.save();
+            ctx.translate(ob.x + ob.size/2, GROUND_Y - ob.size/2);
 
-            ctx.fillStyle = 'white';
-            ctx.font = 'bold 16px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(label, ob.x + ob.width / 2, GROUND_Y - ob.height / 2);
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'alphabetic';
-        }
-
-        function drawClouds() {
-            ctx.fillStyle = 'rgba(255,255,255,0.9)';
-            const cloudSpeed = 0.8;
-            for (let i = 0; i < 4; i++) {
-                const cx = (canvas.width + i * 250 - (frameCount * cloudSpeed) % 1200) % 1200 - 100;
+            if (ob.type === 'scandal') { // Exploding newspaper
+                ctx.fillStyle = '#ff6600';
+                ctx.fillRect(-ob.size/2, -ob.size/2, ob.size, ob.size);
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold ' + ob.size/3 + 'px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('FAKE?', 0, 0);
+                // Explosion lines
+                ctx.strokeStyle = '#ff0000';
+                ctx.lineWidth = 3;
+                for (let a=0; a<8; a++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0,0);
+                    ctx.lineTo(Math.cos(a*Math.PI/4)*ob.size/2, Math.sin(a*Math.PI/4)*ob.size/2);
+                    ctx.stroke();
+                }
+            } else if (ob.type === 'lawsuit') { // Gavel
+                ctx.fillStyle = '#8b4513';
+                ctx.fillRect(-ob.size/4, -ob.size, ob.size/2, ob.size*1.2); // Handle
+                ctx.fillStyle = '#654321';
                 ctx.beginPath();
-                ctx.arc(cx, 60 + i * 10, 25, 0, Math.PI * 2);
-                ctx.arc(cx + 30, 60 + i * 10, 35, 0, Math.PI * 2);
-                ctx.arc(cx + 60, 60 + i * 10, 28, 0, Math.PI * 2);
-                ctx.arc(cx + 20, 45 + i * 10, 22, 0, Math.PI * 2);
+                ctx.arc(0, -ob.size*1.1, ob.size/3, 0, Math.PI*2);
+                ctx.fill(); // Head
+            } else if (ob.type === 'threat') { // Arrow/missile
+                ctx.fillStyle = '#cc0000';
+                ctx.beginPath();
+                ctx.moveTo(-ob.size/2, 0);
+                ctx.lineTo(ob.size/2, -ob.size/4);
+                ctx.lineTo(ob.size/2, ob.size/4);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = '#ff9900';
+                ctx.fillRect(-ob.size/2 - 10, -5, 20, 10); // Flames
+            } else if (ob.type === 'media') { // Cameras
+                ctx.fillStyle = '#000';
+                for (let c=-1; c<2; c++) {
+                    ctx.fillRect(c*ob.size/4 - 10, -ob.size/3, 20, 20);
+                    ctx.fillStyle = '#ff0000';
+                    ctx.beginPath();
+                    ctx.arc(c*ob.size/4, -ob.size/3 + 5, 5, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.fillStyle = '#000';
+                }
+            } else if (ob.type === 'poll') { // Down graph
+                ctx.strokeStyle = '#ff0000';
+                ctx.lineWidth = ob.size/8;
+                ctx.beginPath();
+                ctx.moveTo(-ob.size/2, -ob.size/2);
+                ctx.lineTo(0, ob.size/2);
+                ctx.lineTo(ob.size/2, 0);
+                ctx.stroke();
+                ctx.fillStyle = '#ff0000';
+                ctx.beginPath();
+                ctx.moveTo(ob.size/2, 0);
+                ctx.lineTo(ob.size/2 - 15, -10);
+                ctx.lineTo(ob.size/2 - 15, 10);
+                ctx.closePath();
                 ctx.fill();
             }
+
+            ctx.restore();
         }
 
-        function handleJump() {
-            if (gameState === 'playing' && playerY >= GROUND_Y - PLAYER_HEIGHT) {
-                velY = JUMP_VEL;
-            }
-        }
-
-        function handleKeydown(e) {
-            e.preventDefault();
-            keys[e.code] = true;
-        }
-
-        function handleKeyup(e) {
-            keys[e.code] = false;
-        }
+        // Input
+        const keys = {};
+        window.addEventListener('keydown', e => { if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); keys[e.code] = true; } });
+        window.addEventListener('keyup', e => keys[e.code] = false);
+        canvas.addEventListener('click', () => { if (player.grounded) { player.vy = JUMP; player.grounded = false; playJumpSound(); } });
 
         function gameOver() {
-            gameState = 'gameover';
-            cancelAnimationFrame(animationFrameId);
-
-            if (score > parseInt(localStorage.getItem('political_runner_hs') || '0')) {
-                localStorage.setItem('political_runner_hs', Math.floor(score));
-            }
-
+            localStorage.setItem('political_runner_hs', Math.floor(highScore));
             document.getElementById('finalScore').textContent = Math.floor(score);
             document.getElementById('goHighScore').textContent = Math.floor(highScore);
             canvas.style.display = 'none';
@@ -366,12 +383,8 @@
         function restartGame() {
             gameoverDiv.style.display = 'none';
             menuDiv.style.display = 'block';
-            canvas.style.display = 'none';
-            loadHighScore();
-            gameState = 'menu';
+            document.getElementById('menuHighScore').textContent = highScore;
         }
-
-        init();
     </script>
 </body>
 </html>
