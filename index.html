@@ -52,7 +52,7 @@
         const obstacles = [];
         let dayNightCycle = 0;
 
-        // Characters definition with unique traits
+        // Characters
         const characters = {
             trump: { name: 'TRUMP', suit: '#c1440e', tie: '#ff0000', hair: '#ffa500', skin: '#f4a460' },
             rfk: { name: 'RFK JR', suit: '#228b22', tie: '#006400', hair: '#8b4513', skin: '#f4a460' },
@@ -60,10 +60,10 @@
             kamala: { name: 'KAMALA', suit: '#8b008b', tie: '#4b0082', hair: '#000000', skin: '#d2691e' }
         };
 
-        // Audio context for simple jump sound
+        // Simple jump sound
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
         function playJumpSound() {
+            if (!audioCtx) return;
             const osc = audioCtx.createOscillator();
             osc.type = 'square';
             osc.frequency.setValueAtTime(200, audioCtx.currentTime);
@@ -81,6 +81,7 @@
             menuDiv.style.display = 'none';
             canvas.style.display = 'block';
             resetGame();
+            gameState = 'playing';
             gameLoop();
         }
 
@@ -104,9 +105,8 @@
         function update() {
             frame++;
             score += 0.2;
-            dayNightCycle = (score / 500) % 1; // Cycle every ~5000 points
+            dayNightCycle = (score / 500) % 1;
 
-            // Jump
             if ((keys[' '] || keys['ArrowUp']) && player.grounded) {
                 player.vy = JUMP;
                 player.grounded = false;
@@ -121,18 +121,15 @@
                 player.grounded = true;
             }
 
-            // Spawn obstacles
             if (Math.random() < 0.008 + score * 0.00008) {
                 const types = ['scandal', 'lawsuit', 'threat', 'media', 'poll'];
                 obstacles.push({ x: canvas.width + 50, type: types[Math.floor(Math.random() * types.length)], size: 40 + Math.random() * 40 });
             }
 
-            // Move & collide
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 obstacles[i].x -= 7 + score * 0.0008;
                 if (obstacles[i].x < -100) { obstacles.splice(i,1); continue; }
 
-                // Simple collision
                 if (obstacles[i].x < 100 && obstacles[i].x + obstacles[i].size > 60 &&
                     player.y + 80 > GROUND_Y - obstacles[i].size) {
                     gameOver();
@@ -143,7 +140,7 @@
         }
 
         function draw() {
-            // Sky with day/night
+            // Sky day/night
             const skyGrad = ctx.createLinearGradient(0,0,0,canvas.height);
             const brightness = 1 - dayNightCycle * 0.6;
             skyGrad.addColorStop(0, `hsl(200, 70%, ${70 * brightness}%)`);
@@ -151,7 +148,7 @@
             ctx.fillStyle = skyGrad;
             ctx.fillRect(0,0,canvas.width,canvas.height);
 
-            // Stars/moon at night
+            // Night stars
             if (dayNightCycle > 0.5) {
                 ctx.fillStyle = 'white';
                 for (let i = 0; i < 20; i++) {
@@ -175,7 +172,7 @@
             ctx.fillStyle = '#90ee90';
             ctx.fillRect(0, GROUND_Y, canvas.width, canvas.height - GROUND_Y);
 
-            // Ground lines
+            // Ground dashes
             ctx.strokeStyle = '#228b22';
             ctx.lineWidth = 4;
             const dash = frame * 3 % 60;
@@ -186,13 +183,13 @@
                 ctx.stroke();
             }
 
-            // Draw obstacles
+            // Obstacles
             obstacles.forEach(ob => drawObstacle(ob));
 
-            // Draw player
+            // Player
             drawCharacter(70, player.y, currentChar);
 
-            // Dust on landing
+            // Dust puff on ground
             if (player.grounded && frame % 10 < 5) {
                 ctx.fillStyle = '#d2b48c';
                 ctx.fillRect(80, GROUND_Y - 5, 20, 10);
@@ -222,7 +219,7 @@
             ctx.fillRect(15, 50 + runAnim, 10, 30);
             ctx.fillRect(35, 50 - runAnim, 10, 30);
 
-            // Suit body
+            // Body
             ctx.fillStyle = char.suit;
             ctx.fillRect(10, 20, 40, 50);
 
@@ -246,11 +243,15 @@
             ctx.arc(30, 10, 18, 0, Math.PI*2);
             ctx.fill();
 
-            // Hair
+            // Hair - fixed for compatibility
             ctx.fillStyle = char.hair;
             if (char === characters.trump) {
+                // Trump swoosh using arcs (works everywhere)
                 ctx.beginPath();
-                ctx.ellipse(30, 5, 25, 15, 0, 0, Math.PI*2);
+                ctx.arc(30, 5, 25, Math.PI * 0.2, Math.PI * 0.8);
+                ctx.arc(40, -5, 18, Math.PI * 0.8, Math.PI * 1.6);
+                ctx.arc(20, -5, 18, Math.PI * 1.4, Math.PI * 0.2, true);
+                ctx.closePath();
                 ctx.fill();
             } else if (char === characters.biden) {
                 ctx.fillRect(12, -5, 36, 20);
@@ -271,7 +272,7 @@
             ctx.fillRect(25, 7, 3, 3);
             ctx.fillRect(35, 7, 3, 3);
 
-            // Special: Biden glasses
+            // Biden glasses
             if (char === characters.biden) {
                 ctx.strokeStyle = '#000';
                 ctx.lineWidth = 3;
@@ -283,13 +284,17 @@
                 ctx.stroke();
             }
 
-            // Special: Kamala pearls
+            // Kamala pearls
             if (char === characters.kamala) {
                 ctx.fillStyle = '#fff';
-                for (let p=0; p<5; p++) ctx.beginPath(), ctx.arc(15 + p*8, 28, 4, 0, Math.PI*2), ctx.fill();
+                for (let p=0; p<5; p++) {
+                    ctx.beginPath();
+                    ctx.arc(15 + p*8, 28, 4, 0, Math.PI*2);
+                    ctx.fill();
+                }
             }
 
-            // Name tag
+            // Name
             ctx.fillStyle = '#000';
             ctx.font = 'bold 12px Arial';
             ctx.textAlign = 'center';
@@ -302,7 +307,7 @@
             ctx.save();
             ctx.translate(ob.x + ob.size/2, GROUND_Y - ob.size/2);
 
-            if (ob.type === 'scandal') { // Exploding newspaper
+            if (ob.type === 'scandal') {
                 ctx.fillStyle = '#ff6600';
                 ctx.fillRect(-ob.size/2, -ob.size/2, ob.size, ob.size);
                 ctx.fillStyle = '#fff';
@@ -310,7 +315,6 @@
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText('FAKE?', 0, 0);
-                // Explosion lines
                 ctx.strokeStyle = '#ff0000';
                 ctx.lineWidth = 3;
                 for (let a=0; a<8; a++) {
@@ -319,14 +323,14 @@
                     ctx.lineTo(Math.cos(a*Math.PI/4)*ob.size/2, Math.sin(a*Math.PI/4)*ob.size/2);
                     ctx.stroke();
                 }
-            } else if (ob.type === 'lawsuit') { // Gavel
+            } else if (ob.type === 'lawsuit') {
                 ctx.fillStyle = '#8b4513';
-                ctx.fillRect(-ob.size/4, -ob.size, ob.size/2, ob.size*1.2); // Handle
+                ctx.fillRect(-ob.size/4, -ob.size, ob.size/2, ob.size*1.2);
                 ctx.fillStyle = '#654321';
                 ctx.beginPath();
                 ctx.arc(0, -ob.size*1.1, ob.size/3, 0, Math.PI*2);
-                ctx.fill(); // Head
-            } else if (ob.type === 'threat') { // Arrow/missile
+                ctx.fill();
+            } else if (ob.type === 'threat') {
                 ctx.fillStyle = '#cc0000';
                 ctx.beginPath();
                 ctx.moveTo(-ob.size/2, 0);
@@ -335,8 +339,8 @@
                 ctx.closePath();
                 ctx.fill();
                 ctx.fillStyle = '#ff9900';
-                ctx.fillRect(-ob.size/2 - 10, -5, 20, 10); // Flames
-            } else if (ob.type === 'media') { // Cameras
+                ctx.fillRect(-ob.size/2 - 10, -5, 20, 10);
+            } else if (ob.type === 'media') {
                 ctx.fillStyle = '#000';
                 for (let c=-1; c<2; c++) {
                     ctx.fillRect(c*ob.size/4 - 10, -ob.size/3, 20, 20);
@@ -346,7 +350,7 @@
                     ctx.fill();
                     ctx.fillStyle = '#000';
                 }
-            } else if (ob.type === 'poll') { // Down graph
+            } else if (ob.type === 'poll') {
                 ctx.strokeStyle = '#ff0000';
                 ctx.lineWidth = ob.size/8;
                 ctx.beginPath();
@@ -366,13 +370,14 @@
             ctx.restore();
         }
 
-        // Input
+        // Input handling
         const keys = {};
-        window.addEventListener('keydown', e => { if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); keys[e.code] = true; } });
+        window.addEventListener('keydown', e => { if (e.code === 'Space' || e.code === 'ArrowUp') e.preventDefault(); keys[e.code] = true; });
         window.addEventListener('keyup', e => keys[e.code] = false);
         canvas.addEventListener('click', () => { if (player.grounded) { player.vy = JUMP; player.grounded = false; playJumpSound(); } });
 
         function gameOver() {
+            gameState = 'gameover';
             localStorage.setItem('political_runner_hs', Math.floor(highScore));
             document.getElementById('finalScore').textContent = Math.floor(score);
             document.getElementById('goHighScore').textContent = Math.floor(highScore);
